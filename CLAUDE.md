@@ -32,7 +32,7 @@ cd ../plantogether-common && mvn clean install
 
 ## Architecture
 
-Spring Boot 3.3.6 microservice (Java 21). Orchestrates all user notifications: consumes domain events from
+Spring Boot 3.3.6 microservice (Java 25). Orchestrates all user notifications: consumes domain events from
 RabbitMQ, resolves user profiles via gRPC, and sends FCM push notifications + SMTP emails.
 
 **Port:** REST `8087` (no gRPC server)

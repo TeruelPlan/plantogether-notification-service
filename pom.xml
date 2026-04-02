@@ -18,7 +18,7 @@
     <description>Microservice Notification — FCM push + email via RabbitMQ (port 8087)</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
     </properties>
 
     <dependencies>
@@ -53,6 +53,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.38</version>
             <optional>true</optional>
         </dependency>
         <!-- Firebase Admin SDK (FCM) -->
