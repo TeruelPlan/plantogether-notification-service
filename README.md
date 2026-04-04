@@ -1,86 +1,87 @@
 # Notification Service
 
-> Service d'orchestration des notifications push (FCM) et email
+> Push notification (FCM) and email orchestration service
 
-## Rôle dans l'architecture
+## Role in the Architecture
 
-Le Notification Service est le consommateur principal des événements RabbitMQ. Il orchestre l'envoi de
-notifications push (Firebase Cloud Messaging) et d'emails SMTP vers les membres concernés. Pour chaque
-événement, il appelle TripService.GetTripMembers via gRPC pour récupérer les emails et display_names, puis
-filtre selon les préférences utilisateur avant d'envoyer.
+The Notification Service is the primary consumer of RabbitMQ events. It orchestrates push notifications
+(Firebase Cloud Messaging) and SMTP emails to relevant trip members. For each event, it calls
+TripService.GetTripMembers via gRPC to retrieve display names, then filters based on user preferences
+before sending.
 
-## Fonctionnalités
+## Features
 
-- Consommation de tous les événements métier RabbitMQ (`*.events`)
-- Envoi de notifications push via Firebase Cloud Messaging (FCM)
-- Envoi d'emails via SMTP
-- Retry automatique : 3 tentatives avec backoff exponentiel (5s → 60s → 300s)
-- Gestion des préférences de notification par utilisateur et par trip
-- Journal des notifications envoyées (`notification_log`)
+- Consumption of all business events from RabbitMQ (`*.events`)
+- Push notification delivery via Firebase Cloud Messaging (FCM)
+- Retry mechanism: 3 attempts with exponential backoff (5s → 60s → 300s)
+- Per-user, per-trip notification preference management
+- Notification delivery log (`notification_log`)
 
-## Événements consommés
+## Events Consumed
 
 | Routing Key | Action |
 |-------------|--------|
-| `trip.created` | Notifie les organisateurs |
-| `trip.member.joined` | Notifie l'organisateur |
-| `poll.created` | Notifie les membres du trip |
-| `poll.locked` | Notifie les membres (dates confirmées) |
-| `vote.cast` | Notifie les membres |
-| `expense.created` | Notifie les membres concernés |
-| `expense.deleted` | Notifie les membres concernés |
-| `task.assigned` | Notifie l'assigné |
-| `task.deadline.reminder` | Notifie l'assigné |
-| `chat.message.sent` | Notifie les membres hors-ligne |
+| `trip.created` | Notify organizers |
+| `trip.member.joined` | Notify the organizer |
+| `poll.created` | Notify trip members |
+| `poll.locked` | Notify members (dates confirmed) |
+| `vote.cast` | Notify members |
+| `expense.created` | Notify relevant members |
+| `expense.deleted` | Notify relevant members |
+| `task.assigned` | Notify the assignee |
+| `task.deadline.reminder` | Notify the assignee |
+| `chat.message.sent` | Notify offline members |
 
 ## gRPC Clients
 
-- `TripService.GetTripMembers(tripId)` — récupère emails et display_names pour les notifications
-- `TripService.CheckMembership(tripId, userId)` — (si besoin de vérification ponctuelle)
+- `TripService.GetTripMembers(tripId)` — retrieves display names for notifications
+- `TripService.IsMember(tripId, deviceId)` — membership verification (if needed)
 
-## Modèle de données (`db_notification`)
+## Data Model (`db_notification`)
 
 **notification_preference**
 
-| Colonne | Type | Description |
-|---------|------|-------------|
+| Column | Type | Description |
+|--------|------|-------------|
 | `id` | UUID PK | |
-| `keycloak_id` | UUID NOT NULL | Utilisateur |
-| `trip_id` | UUID NULLABLE | NULL = préférence globale |
-| `channel` | ENUM NOT NULL | PUSH / EMAIL |
-| `event_type` | VARCHAR(100) NOT NULL | Ex. `expense.created`, `poll.created` |
-| `enabled` | BOOLEAN NOT NULL | Préférence activée/désactivée |
+| `device_id` | UUID NOT NULL | Device UUID |
+| `trip_id` | UUID NULLABLE | NULL = global preference |
+| `channel` | ENUM NOT NULL | PUSH |
+| `event_type` | VARCHAR(100) NOT NULL | e.g. `expense.created`, `poll.created` |
+| `enabled` | BOOLEAN NOT NULL | Preference enabled/disabled |
 
 **notification_log**
 
-| Colonne | Type | Description |
-|---------|------|-------------|
+| Column | Type | Description |
+|--------|------|-------------|
 | `id` | UUID PK | |
-| `keycloak_id` | UUID NOT NULL | Destinataire |
-| `event_type` | VARCHAR(100) NOT NULL | Type d'événement source |
-| `trip_id` | UUID NULLABLE | Trip concerné |
-| `payload` | JSONB NOT NULL | Contenu de la notification |
-| `channel` | ENUM NOT NULL | PUSH / EMAIL |
+| `device_id` | UUID NOT NULL | Recipient device UUID |
+| `event_type` | VARCHAR(100) NOT NULL | Source event type |
+| `trip_id` | UUID NULLABLE | Related trip |
+| `payload` | JSONB NOT NULL | Notification content |
+| `channel` | ENUM NOT NULL | PUSH |
 | `status` | ENUM NOT NULL | SENT / FAILED |
 | `sent_at` | TIMESTAMP NOT NULL | |
 
-## Stratégie de retry
+## Retry Strategy
 
-Les messages en erreur sont rejoués automatiquement avec un backoff exponentiel :
+Failed messages are automatically retried with exponential backoff:
 
-1. 1ère tentative immédiate
-2. Retry après 5 secondes
-3. Retry après 60 secondes
-4. Retry après 300 secondes (dernier essai)
-5. Si toujours en échec → dead letter queue + log FAILED dans `notification_log`
+1. 1st attempt — immediate
+2. Retry after 5 seconds
+3. Retry after 60 seconds
+4. Retry after 300 seconds (last attempt)
+5. If still failing → dead letter queue + FAILED log in `notification_log`
 
-## Endpoints REST
+## REST Endpoints
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/v1/notifications/preferences` | Récupérer ses préférences |
-| PUT | `/api/v1/notifications/preferences` | Mettre à jour ses préférences |
-| GET | `/api/v1/notifications/history` | Historique des notifications reçues |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/notifications/preferences` | Get notification preferences |
+| PUT | `/api/v1/notifications/preferences` | Update notification preferences |
+| POST | `/api/v1/notifications/fcm-token` | Register device FCM token |
+| DELETE | `/api/v1/notifications/fcm-token` | Unregister FCM token |
+| GET | `/api/v1/notifications/history` | Notification delivery history |
 
 ## Configuration
 
@@ -104,40 +105,34 @@ spring:
 firebase:
   credentials: ${FIREBASE_CREDENTIALS_JSON}
 
-smtp:
-  host: ${SMTP_HOST}
-  port: ${SMTP_PORT:587}
-  username: ${SMTP_USERNAME}
-  password: ${SMTP_PASSWORD}
-
 grpc:
   client:
     trip-service:
       address: static://trip-service:9081
 ```
 
-## Lancer en local
+## Running Locally
 
 ```bash
-# Prérequis : docker compose --profile essential up -d
-# + plantogether-proto et plantogether-common installés
+# Prerequisites: docker compose up -d
+# + plantogether-proto and plantogether-common installed
 
 mvn spring-boot:run
 ```
 
-## Dépendances
+## Dependencies
 
-- **Keycloak 24+** : validation JWT (endpoints préférences)
-- **PostgreSQL 16** (`db_notification`) : préférences et journal
-- **RabbitMQ** : consommation de tous les événements `*.events`
-- **Firebase Cloud Messaging** : push mobile
-- **SMTP** : notifications email
-- **Trip Service** (gRPC 9081) : résolution des profils (emails, display_names)
-- **plantogether-proto** : contrats gRPC (client)
-- **plantogether-common** : DTOs events, CorsConfig
+- **PostgreSQL 16** (`db_notification`): preferences and delivery log
+- **RabbitMQ**: consumption of all `*.events` domain events
+- **Firebase Cloud Messaging**: mobile push notifications
+- **Trip Service** (gRPC 9081): profile resolution (display names)
+- **plantogether-proto**: gRPC contracts (client)
+- **plantogether-common**: event DTOs, DeviceIdFilter, SecurityAutoConfiguration, CorsConfig
 
-## Sécurité
+## Security
 
-- Les endpoints de préférences requièrent un token Bearer valide
-- Aucune PII n'est stockée en dur — les profils sont résolus à la volée via gRPC
-- Les FCM tokens sont gérés côté Keycloak / attribut custom utilisateur
+- Anonymous device-based identity: `X-Device-Id` header on every request
+- `DeviceIdFilter` (from plantogether-common, auto-configured via `SecurityAutoConfiguration`) extracts the device UUID and sets the SecurityContext principal
+- No JWT, no Keycloak, no login, no sessions
+- Zero PII stored — profiles are resolved on-the-fly via gRPC at send time
+- FCM tokens are stored per device_id in this service's database

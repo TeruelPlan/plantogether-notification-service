@@ -32,8 +32,8 @@ cd ../plantogether-common && mvn clean install
 
 ## Architecture
 
-Spring Boot 3.3.6 microservice (Java 21). Orchestrates all user notifications: consumes domain events from
-RabbitMQ, resolves user profiles via gRPC, and sends FCM push notifications + SMTP emails.
+Spring Boot 3.3.6 microservice (Java 25). Orchestrates all user notifications: consumes domain events from
+RabbitMQ, resolves user profiles via gRPC, and sends FCM push notifications.
 
 **Port:** REST `8087` (no gRPC server)
 
@@ -43,11 +43,11 @@ RabbitMQ, resolves user profiles via gRPC, and sends FCM push notifications + SM
 
 ```
 com.plantogether.notification/
-├── config/          # SecurityConfig, RabbitConfig
+├── config/          # RabbitConfig
 ├── controller/      # REST controllers (preferences, FCM tokens)
 ├── domain/          # JPA entities (NotificationPreference, NotificationLog)
 ├── repository/      # Spring Data JPA
-├── service/         # NotificationService, FcmService, EmailService
+├── service/         # NotificationService, FcmService
 ├── dto/             # Request/Response DTOs (Lombok @Data @Builder)
 ├── grpc/
 │   └── client/      # TripGrpcClient (GetTripMembers → trip-service:9081)
@@ -61,28 +61,26 @@ com.plantogether.notification/
 |---|---|---|
 | PostgreSQL 16 | `localhost:5432/plantogether_notification` | Preferences + delivery log (db_notification) |
 | RabbitMQ | `localhost:5672` | Consuming all domain events |
-| Keycloak 24+ | `localhost:8180` | JWT validation (REST API) |
-| trip-service gRPC | `localhost:9081` | GetTripMembers (email + display_name resolution) |
+| trip-service gRPC | `localhost:9081` | GetTripMembers (display_name resolution) |
 | Firebase Admin SDK | — | FCM push notifications |
-| SMTP | — | Email sending via Spring Mail + Thymeleaf templates |
 
 
 ### Zero PII principle
 
-No names or emails stored in this service's database — only Keycloak UUIDs. User profiles (email, display_name)
+No names stored in this service's database — only device UUIDs. User profiles (display_name)
 are fetched at send time via `TripGrpcService.GetTripMembers(tripId)` and never persisted.
 
 ### Domain model (db_notification)
 
-**`notification_preference`** — id (UUID), keycloak_id, trip_id (nullable = global preference), channel
-(`PUSH`/`EMAIL`), event_type, enabled (BOOLEAN).
+**`notification_preference`** — id (UUID), device_id, trip_id (nullable = global preference), channel
+(`PUSH`), event_type, enabled (BOOLEAN).
 
-**`notification_log`** — id (UUID), keycloak_id, event_type, trip_id, payload (JSONB), sent_at, channel,
+**`notification_log`** — id (UUID), device_id, event_type, trip_id, payload (JSONB), sent_at, channel,
 status (`SENT`/`FAILED`).
 
 ### gRPC client
 
-Calls `TripGrpcService.GetTripMembers(tripId)` on trip-service:9081 to resolve `display_name` and `email`
+Calls `TripGrpcService.GetTripMembers(tripId)` on trip-service:9081 to resolve `display_name`
 for each recipient at notification send time.
 
 ### RabbitMQ consumers
@@ -104,7 +102,7 @@ Consumes all events from exchange `plantogether.events` via routing key pattern 
 
 ### Retry strategy
 
-FCM/email failures are retried 3 times with exponential backoff: 5s → 60s → 300s. After exhaustion,
+FCM failures are retried 3 times with exponential backoff: 5s → 60s → 300s. After exhaustion,
 the notification is logged as `FAILED` in `notification_log`.
 
 ### REST API (`/api/v1/notifications/`)
@@ -117,10 +115,13 @@ the notification is logged as `FAILED` in `notification_log`.
 | DELETE | `/api/v1/notifications/fcm-token` | Unregister FCM token |
 | GET | `/api/v1/notifications/history` | Delivery history (paginated) |
 
-### Email templates
+### Security
 
-Thymeleaf HTML templates in `src/main/resources/email-templates/`. Naming: `{event-type}_{locale}.html`
-(e.g. `poll-created_fr.html`, `expense-created_en.html`).
+- Anonymous device-based identity via `DeviceIdFilter` (from `plantogether-common`, auto-configured via `SecurityAutoConfiguration`)
+- `X-Device-Id` header extracted and set as SecurityContext principal
+- No JWT, no Keycloak, no login, no sessions
+- No SecurityConfig.java needed — `SecurityAutoConfiguration` handles everything
+- Zero PII stored — profiles resolved on-the-fly via gRPC
 
 ### Environment variables
 
@@ -129,10 +130,6 @@ Thymeleaf HTML templates in `src/main/resources/email-templates/`. Naming: `{eve
 | `DB_USER` / `DB_PASSWORD` | PostgreSQL credentials |
 | `RABBITMQ_HOST` | RabbitMQ host |
 | `RABBITMQ_USER` / `RABBITMQ_PASSWORD` | RabbitMQ credentials |
-| `MAIL_HOST` | SMTP host |
-| `MAIL_USERNAME` / `MAIL_PASSWORD` | SMTP credentials |
 | `FIREBASE_CREDENTIALS_PATH` | Path to Firebase Admin JSON key (default: `classpath:firebase-service-account.json`) |
-| `KEYCLOAK_URL` | Keycloak base URL (default: `http://localhost:8180`) |
 | `TRIP_SERVICE_GRPC_HOST` | trip-service gRPC host (default: `localhost`) |
 | `TRIP_SERVICE_GRPC_PORT` | trip-service gRPC port (default: `9081`) |
-
