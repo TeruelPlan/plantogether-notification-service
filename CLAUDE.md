@@ -33,9 +33,10 @@ cd ../plantogether-common && mvn clean install
 ## Architecture
 
 Spring Boot 3.3.6 microservice (Java 21). Orchestrates all user notifications: consumes domain events from
-RabbitMQ, resolves user profiles via gRPC, and sends FCM push notifications.
+RabbitMQ, resolves user profiles via gRPC, sends FCM push notifications, **and owns the centralized STOMP hub
+(`/ws`) that relays real-time trip updates to connected clients**.
 
-**Port:** REST `8087` (no gRPC server)
+**Port:** REST + WebSocket (STOMP) `8087` (no gRPC server).
 
 **Package:** `com.plantogether.notification`
 
@@ -43,17 +44,39 @@ RabbitMQ, resolves user profiles via gRPC, and sends FCM push notifications.
 
 ```
 com.plantogether.notification/
-├── config/          # RabbitConfig
+├── config/          # RabbitConfig, WebSocketConfig (centralized STOMP hub)
 ├── controller/      # REST controllers (preferences, FCM tokens)
 ├── domain/          # JPA entities (NotificationPreference, NotificationLog)
 ├── repository/      # Spring Data JPA
+├── security/        # StompDeviceIdInterceptor, StompMembershipInterceptor
 ├── service/         # NotificationService, FcmService
 ├── dto/             # Request/Response DTOs (Lombok @Data @Builder)
 ├── grpc/
-│   └── client/      # TripGrpcClient (GetTripMembers → trip-service:9081)
+│   └── client/      # TripGrpcClient (IsMember for STOMP membership check, GetTripMembers for FCM)
+├── listener/        # RabbitMQ → STOMP bridge listeners (PollVoteStomp, PollLockedStomp)
 └── event/
-    └── listener/    # RabbitMQ consumers for all *.events routing keys
+    └── listener/    # RabbitMQ consumers for FCM / email routing keys
 ```
+
+### WebSocket / STOMP (centralized hub)
+
+Serves STOMP at `/ws` (WebSocket + SockJS fallback). All services that need to push real-time updates to
+clients publish RabbitMQ events; this service consumes them and broadcasts STOMP frames.
+
+| Direction | Destination | Purpose |
+|---|---|---|
+| CONNECT | `/ws` (`X-Device-Id` STOMP header required) | Establish session |
+| SUBSCRIBE | `/topic/trips/{tripId}/updates` | Membership-checked via `TripGrpcClient.IsMember`; receives per-trip update frames |
+
+Membership check cached in-process for 60s per `(tripId, deviceId)` and invalidated on STOMP `DISCONNECT`.
+`SimpleBroker` is used (in-process); multi-replica fan-out requires a STOMP relay — see deferred-work.
+
+**Bridge listeners (RabbitMQ → STOMP):**
+
+| Queue | Routing key | Frame type | Destination |
+|---|---|---|---|
+| `q.notification.stomp.poll.vote.cast` | `poll.vote.cast` | `POLL_VOTE_CAST` | `/topic/trips/{tripId}/updates` |
+| `q.notification.stomp.poll.locked` | `poll.locked` | `POLL_LOCKED` | `/topic/trips/{tripId}/updates` |
 
 ### Infrastructure dependencies
 

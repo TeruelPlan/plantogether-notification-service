@@ -15,7 +15,7 @@
     <artifactId>plantogether-notification-service</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>plantogether-notification-service</name>
-    <description>Microservice Notification — FCM push + email via RabbitMQ (port 8087)</description>
+    <description>Microservice Notification — FCM push + email + centralized STOMP hub (port 8087)</description>
 
     <properties>
         <java.version>21</java.version>
@@ -46,6 +46,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- WebSocket / STOMP (centralized real-time hub for all services) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -57,15 +62,27 @@
             <artifactId>firebase-admin</artifactId>
             <version>9.3.0</version>
         </dependency>
+        <!-- Proto stubs (TripService.IsMember / GetTripMembers) -->
         <dependency>
             <groupId>com.plantogether</groupId>
-            <artifactId>plantogether-common</artifactId>
-            <version>1.2.0</version>
+            <artifactId>plantogether-proto</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <!-- gRPC runtime for TripGrpcClient -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>1.63.0</version>
         </dependency>
         <dependency>
             <groupId>com.plantogether</groupId>
             <artifactId>plantogether-common</artifactId>
-            <version>1.2.0</version>
+            <version>1.7.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.plantogether</groupId>
+            <artifactId>plantogether-common</artifactId>
+            <version>1.7.0-SNAPSHOT</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -77,6 +94,13 @@
         <dependency>
             <groupId>org.springframework.amqp</groupId>
             <artifactId>spring-rabbit-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- gRPC testing for membership interceptor tests -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-testing</artifactId>
+            <version>1.63.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
