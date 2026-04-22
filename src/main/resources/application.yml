@@ -21,8 +21,17 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+
 firebase:
   credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-service-account.json}
+
+grpc:
+  trip-service:
+    host: ${TRIP_SERVICE_GRPC_HOST:localhost}
+    port: ${TRIP_SERVICE_GRPC_PORT:9081}
+
+websocket:
+  allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:http://localhost:*}
 
 rabbitmq:
   queues:
