@@ -24,15 +24,20 @@ mvn test
 docker build -t plantogether-notification-service .
 ```
 
-**Prerequisites:** install shared libs first:
+**Prerequisites:**
+
+Local Maven builds resolve shared libs (`plantogether-parent`, `plantogether-bom`, `plantogether-common`,
+`plantogether-proto`) from GitHub Packages. Export a PAT with `read:packages` before running `mvn`:
+
 ```bash
-cd ../plantogether-proto && mvn clean install
-cd ../plantogether-common && mvn clean install
+export GITHUB_ACTOR=<your-github-username>
+export GITHUB_TOKEN=<your-PAT-with-read:packages>
+mvn -s .settings.xml clean package
 ```
 
 ## Architecture
 
-Spring Boot 3.3.6 microservice (Java 21). Orchestrates all user notifications: consumes domain events from
+Spring Boot 3.5.9 microservice (Java 21). Orchestrates all user notifications: consumes domain events from
 RabbitMQ, resolves user profiles via gRPC, sends FCM push notifications, **and owns the centralized STOMP hub
 (`/ws`) that relays real-time trip updates to connected clients**.
 

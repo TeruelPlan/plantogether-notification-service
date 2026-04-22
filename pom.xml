@@ -1,25 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.6</version>
-        <relativePath/>
+        <groupId>com.plantogether</groupId>
+        <artifactId>plantogether-parent</artifactId>
+        <version>1.1.0</version>
     </parent>
 
-    <groupId>com.plantogether</groupId>
     <artifactId>plantogether-notification-service</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>plantogether-notification-service</name>
     <description>Microservice Notification — FCM push + email + centralized STOMP hub (port 8087)</description>
 
-    <properties>
-        <java.version>21</java.version>
-    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.plantogether</groupId>
+                <artifactId>plantogether-bom</artifactId>
+                <version>1.0.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -42,53 +48,39 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <!-- WebSocket / STOMP (centralized real-time hub for all services) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <groupId>com.plantogether</groupId>
+            <artifactId>plantogether-common</artifactId>
         </dependency>
-        <!-- Firebase Admin SDK (FCM) -->
+        <dependency>
+            <groupId>com.plantogether</groupId>
+            <artifactId>plantogether-proto</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+        </dependency>
+        <!-- grpc-xds excluded: conflicts with grpc-core:1.63.0 (IncompatibleClassChangeError on LeastRequestLoadBalancer) -->
         <dependency>
             <groupId>com.google.firebase</groupId>
             <artifactId>firebase-admin</artifactId>
-            <version>9.3.0</version>
             <exclusions>
-                <!-- grpc-xds conflicts with grpc-core:1.63.0 (IncompatibleClassChangeError on LeastRequestLoadBalancer) -->
                 <exclusion>
                     <groupId>io.grpc</groupId>
                     <artifactId>grpc-xds</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- Proto stubs (TripService.IsMember / GetTripMembers) -->
         <dependency>
-            <groupId>com.plantogether</groupId>
-            <artifactId>plantogether-proto</artifactId>
-            <version>1.0.0</version>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
-        <!-- gRPC runtime for TripGrpcClient -->
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty-shaded</artifactId>
-            <version>1.63.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.plantogether</groupId>
-            <artifactId>plantogether-common</artifactId>
-            <version>1.7.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.plantogether</groupId>
-            <artifactId>plantogether-common</artifactId>
-            <version>1.7.0</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -99,48 +91,44 @@
             <artifactId>spring-rabbit-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- gRPC testing for membership interceptor tests -->
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-testing</artifactId>
-            <version>1.63.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.plantogether</groupId>
+            <artifactId>plantogether-common</artifactId>
+            <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>github-proto</id>
-            <name>GitHub Packages — proto</name>
-            <url>https://maven.pkg.github.com/TeruelPlan/plantogether-proto</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>github-common</id>
-            <name>GitHub Packages — common</name>
-            <url>https://maven.pkg.github.com/TeruelPlan/plantogether-common</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>github-parent</id>
+            <url>https://maven.pkg.github.com/TeruelPlan/plantogether-parent</url>
+        </repository>
+        <repository>
+            <id>github-bom</id>
+            <url>https://maven.pkg.github.com/TeruelPlan/plantogether-bom</url>
+        </repository>
+        <repository>
+            <id>github-common</id>
+            <url>https://maven.pkg.github.com/TeruelPlan/plantogether-common</url>
+        </repository>
+        <repository>
+            <id>github-proto</id>
+            <url>https://maven.pkg.github.com/TeruelPlan/plantogether-proto</url>
+        </repository>
+    </repositories>
 </project>
