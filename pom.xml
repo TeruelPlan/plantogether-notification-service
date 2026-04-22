@@ -40,10 +40,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <!-- WebSocket / STOMP (centralized real-time hub for all services) -->
@@ -61,6 +57,13 @@
             <groupId>com.google.firebase</groupId>
             <artifactId>firebase-admin</artifactId>
             <version>9.3.0</version>
+            <exclusions>
+                <!-- grpc-xds conflicts with grpc-core:1.63.0 (IncompatibleClassChangeError on LeastRequestLoadBalancer) -->
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-xds</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Proto stubs (TripService.IsMember / GetTripMembers) -->
         <dependency>
