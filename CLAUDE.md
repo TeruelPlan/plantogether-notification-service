@@ -82,6 +82,7 @@ Membership check cached in-process for 60s per `(tripId, deviceId)` and invalida
 |---|---|---|---|
 | `q.notification.stomp.poll.vote.cast` | `poll.vote.cast` | `POLL_VOTE_CAST` | `/topic/trips/{tripId}/updates` |
 | `q.notification.stomp.poll.locked` | `poll.locked` | `POLL_LOCKED` | `/topic/trips/{tripId}/updates` |
+| `q.notification.stomp.destination.vote.cast` | `vote.cast` | `DESTINATION_VOTE_CAST` | `/topic/trips/{tripId}/updates` |
 
 ### Infrastructure dependencies
 
