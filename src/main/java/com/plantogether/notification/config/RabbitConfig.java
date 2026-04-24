@@ -21,9 +21,12 @@ public class RabbitConfig {
 
   public static final String QUEUE_STOMP_POLL_VOTE_CAST = "q.notification.stomp.poll.vote.cast";
   public static final String QUEUE_STOMP_POLL_LOCKED = "q.notification.stomp.poll.locked";
+  public static final String QUEUE_STOMP_DESTINATION_VOTE_CAST =
+      "q.notification.stomp.destination.vote.cast";
 
   public static final String ROUTING_KEY_POLL_VOTE_CAST = "poll.vote.cast";
   public static final String ROUTING_KEY_POLL_LOCKED = "poll.locked";
+  public static final String ROUTING_KEY_DESTINATION_VOTE_CAST = "vote.cast";
 
   @Bean
   public TopicExchange plantogetherExchange() {
@@ -41,6 +44,11 @@ public class RabbitConfig {
   }
 
   @Bean
+  public Queue stompDestinationVoteCastQueue() {
+    return new Queue(QUEUE_STOMP_DESTINATION_VOTE_CAST, true);
+  }
+
+  @Bean
   public Binding stompPollVoteCastBinding(
       Queue stompPollVoteCastQueue, TopicExchange plantogetherExchange) {
     return BindingBuilder.bind(stompPollVoteCastQueue)
@@ -54,6 +62,14 @@ public class RabbitConfig {
     return BindingBuilder.bind(stompPollLockedQueue)
         .to(plantogetherExchange)
         .with(ROUTING_KEY_POLL_LOCKED);
+  }
+
+  @Bean
+  public Binding stompDestinationVoteCastBinding(
+      Queue stompDestinationVoteCastQueue, TopicExchange plantogetherExchange) {
+    return BindingBuilder.bind(stompDestinationVoteCastQueue)
+        .to(plantogetherExchange)
+        .with(ROUTING_KEY_DESTINATION_VOTE_CAST);
   }
 
   @Bean
