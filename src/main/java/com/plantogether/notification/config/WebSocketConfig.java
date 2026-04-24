@@ -11,42 +11,41 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 /**
- * Centralized STOMP hub for PlanTogether. All services publish real-time events
- * to RabbitMQ; this service consumes them and relays frames to connected clients
- * on {@code /topic/trips/{tripId}/updates}.
+ * Centralized STOMP hub for PlanTogether. All services publish real-time events to RabbitMQ; this
+ * service consumes them and relays frames to connected clients on {@code
+ * /topic/trips/{tripId}/updates}.
  */
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final StompDeviceIdInterceptor deviceIdInterceptor;
-    private final StompMembershipInterceptor membershipInterceptor;
-    private final String[] allowedOrigins;
+  private final StompDeviceIdInterceptor deviceIdInterceptor;
+  private final StompMembershipInterceptor membershipInterceptor;
+  private final String[] allowedOrigins;
 
-    public WebSocketConfig(StompDeviceIdInterceptor deviceIdInterceptor,
-                           StompMembershipInterceptor membershipInterceptor,
-                           @Value("${websocket.allowed-origins:http://localhost:*}") String allowedOrigins) {
-        this.deviceIdInterceptor = deviceIdInterceptor;
-        this.membershipInterceptor = membershipInterceptor;
-        this.allowedOrigins = allowedOrigins.split("\\s*,\\s*");
-    }
+  public WebSocketConfig(
+      StompDeviceIdInterceptor deviceIdInterceptor,
+      StompMembershipInterceptor membershipInterceptor,
+      @Value("${websocket.allowed-origins:http://localhost:*}") String allowedOrigins) {
+    this.deviceIdInterceptor = deviceIdInterceptor;
+    this.membershipInterceptor = membershipInterceptor;
+    this.allowedOrigins = allowedOrigins.split("\\s*,\\s*");
+  }
 
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns(allowedOrigins)
-                .withSockJS();
-    }
+  @Override
+  public void registerStompEndpoints(StompEndpointRegistry registry) {
+    registry.addEndpoint("/ws").setAllowedOriginPatterns(allowedOrigins).withSockJS();
+  }
 
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic");
-        registry.setApplicationDestinationPrefixes("/app");
-    }
+  @Override
+  public void configureMessageBroker(MessageBrokerRegistry registry) {
+    registry.enableSimpleBroker("/topic");
+    registry.setApplicationDestinationPrefixes("/app");
+  }
 
-    @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
-        // Order matters: auth first, then membership.
-        registration.interceptors(deviceIdInterceptor, membershipInterceptor);
-    }
+  @Override
+  public void configureClientInboundChannel(ChannelRegistration registration) {
+    // Order matters: auth first, then membership.
+    registration.interceptors(deviceIdInterceptor, membershipInterceptor);
+  }
 }
