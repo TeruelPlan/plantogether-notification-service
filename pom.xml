@@ -15,6 +15,13 @@
     <name>plantogether-notification-service</name>
     <description>Microservice Notification — FCM push + email + centralized STOMP hub (port 8087)</description>
 
+    <scm>
+        <connection>scm:git:https://github.com/TeruelPlan/plantogether-notification-service.git</connection>
+        <developerConnection>scm:git:https://github.com/TeruelPlan/plantogether-notification-service.git</developerConnection>
+        <url>https://github.com/TeruelPlan/plantogether-notification-service</url>
+        <tag>HEAD</tag>
+    </scm>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
