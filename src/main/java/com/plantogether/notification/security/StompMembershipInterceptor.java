@@ -1,8 +1,7 @@
 package com.plantogether.notification.security;
 
 import com.plantogether.common.exception.AccessDeniedException;
-import com.plantogether.notification.grpc.client.TripGrpcClient;
-import com.plantogether.trip.grpc.IsMemberResponse;
+import com.plantogether.common.grpc.TripClient;
 import java.security.Principal;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,7 +26,7 @@ public class StompMembershipInterceptor implements ChannelInterceptor {
   static final Pattern TRIP_TOPIC = Pattern.compile("^/topic/trips/([0-9a-fA-F-]{36})(/|$)");
   static final Duration CACHE_TTL = Duration.ofSeconds(60);
 
-  private final TripGrpcClient tripGrpcClient;
+  private final TripClient tripClient;
   private final Map<Key, Instant> membershipCache = new ConcurrentHashMap<>();
 
   @Override
@@ -77,8 +76,7 @@ public class StompMembershipInterceptor implements ChannelInterceptor {
     if (expiresAt != null && expiresAt.isAfter(now)) {
       return true;
     }
-    IsMemberResponse response = tripGrpcClient.isMember(tripId, deviceId);
-    if (response.getIsMember()) {
+    if (tripClient.isMember(tripId, deviceId)) {
       membershipCache.put(key, now.plus(CACHE_TTL));
       return true;
     }

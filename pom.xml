@@ -15,6 +15,10 @@
     <name>plantogether-notification-service</name>
     <description>Microservice Notification — FCM push + email + centralized STOMP hub (port 8087)</description>
 
+    <properties>
+        <plantogether-bom.version>1.6.1</plantogether-bom.version>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>

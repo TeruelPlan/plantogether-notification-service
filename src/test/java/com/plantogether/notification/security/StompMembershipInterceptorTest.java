@@ -8,8 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.plantogether.common.exception.AccessDeniedException;
-import com.plantogether.notification.grpc.client.TripGrpcClient;
-import com.plantogether.trip.grpc.IsMemberResponse;
+import com.plantogether.common.grpc.TripClient;
 import java.util.Collections;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +26,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 @ExtendWith(MockitoExtension.class)
 class StompMembershipInterceptorTest {
 
-  @Mock TripGrpcClient tripGrpcClient;
+  @Mock TripClient tripClient;
   @Mock MessageChannel channel;
 
   StompMembershipInterceptor interceptor;
@@ -36,7 +35,7 @@ class StompMembershipInterceptorTest {
 
   @BeforeEach
   void setUp() {
-    interceptor = new StompMembershipInterceptor(tripGrpcClient);
+    interceptor = new StompMembershipInterceptor(tripClient);
     tripId = UUID.randomUUID().toString();
     deviceId = UUID.randomUUID().toString();
   }
@@ -51,20 +50,18 @@ class StompMembershipInterceptorTest {
 
   @Test
   void subscribe_member_permitsMessage() {
-    when(tripGrpcClient.isMember(tripId, deviceId))
-        .thenReturn(IsMemberResponse.newBuilder().setIsMember(true).setRole("PARTICIPANT").build());
+    when(tripClient.isMember(tripId, deviceId)).thenReturn(true);
 
     Message<?> result =
         interceptor.preSend(subscribe("/topic/trips/" + tripId + "/updates"), channel);
 
     assertNotNull(result);
-    verify(tripGrpcClient, times(1)).isMember(tripId, deviceId);
+    verify(tripClient, times(1)).isMember(tripId, deviceId);
   }
 
   @Test
   void subscribe_nonMember_throwsAccessDenied() {
-    when(tripGrpcClient.isMember(tripId, deviceId))
-        .thenReturn(IsMemberResponse.newBuilder().setIsMember(false).setRole("").build());
+    when(tripClient.isMember(tripId, deviceId)).thenReturn(false);
 
     assertThrows(
         AccessDeniedException.class,
@@ -76,18 +73,17 @@ class StompMembershipInterceptorTest {
     Message<?> result = interceptor.preSend(subscribe("/topic/system/metrics"), channel);
 
     assertNotNull(result);
-    verifyNoInteractions(tripGrpcClient);
+    verifyNoInteractions(tripClient);
   }
 
   @Test
   void subscribe_cacheHit_doesNotCallGrpc() {
-    when(tripGrpcClient.isMember(tripId, deviceId))
-        .thenReturn(IsMemberResponse.newBuilder().setIsMember(true).setRole("PARTICIPANT").build());
+    when(tripClient.isMember(tripId, deviceId)).thenReturn(true);
 
     interceptor.preSend(subscribe("/topic/trips/" + tripId + "/updates"), channel);
     interceptor.preSend(subscribe("/topic/trips/" + tripId + "/updates"), channel);
 
-    verify(tripGrpcClient, times(1)).isMember(tripId, deviceId);
+    verify(tripClient, times(1)).isMember(tripId, deviceId);
   }
 
   @Test
