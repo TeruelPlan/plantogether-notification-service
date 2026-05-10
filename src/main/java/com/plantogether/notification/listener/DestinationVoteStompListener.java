@@ -36,6 +36,7 @@ public class DestinationVoteStompListener {
             event.getTripId(),
             event.getDestinationId(),
             event.getDeviceId(),
+            event.getTripMemberId(),
             event.getVoteMode(),
             event.getVoteValue(),
             event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now());
@@ -46,7 +47,9 @@ public class DestinationVoteStompListener {
       String type,
       String tripId,
       String destinationId,
+      // Legacy field — will be removed in Phase 3.
       String deviceId,
+      String tripMemberId,
       String voteMode,
       String voteValue,
       Instant occurredAt) {}

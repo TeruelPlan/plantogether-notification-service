@@ -34,6 +34,7 @@ public class PollVoteStompListener {
             event.getPollId(),
             event.getSlotId(),
             event.getDeviceId(),
+            event.getTripMemberId(),
             event.getStatus(),
             event.getNewSlotScore(),
             event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now());
@@ -44,7 +45,9 @@ public class PollVoteStompListener {
       String type,
       String pollId,
       String slotId,
+      // Legacy field — will be removed in Phase 3.
       String deviceId,
+      String tripMemberId,
       String status,
       int newSlotScore,
       Instant occurredAt) {}
