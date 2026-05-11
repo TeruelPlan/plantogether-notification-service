@@ -33,7 +33,7 @@ public class PollVoteStompListener {
             MESSAGE_TYPE,
             event.getPollId(),
             event.getSlotId(),
-            event.getDeviceId(),
+            event.getTripMemberId(),
             event.getStatus(),
             event.getNewSlotScore(),
             event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now());
@@ -44,7 +44,7 @@ public class PollVoteStompListener {
       String type,
       String pollId,
       String slotId,
-      String deviceId,
+      String tripMemberId,
       String status,
       int newSlotScore,
       Instant occurredAt) {}
