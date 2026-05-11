@@ -44,7 +44,7 @@ class DestinationVoteStompListenerTest {
         VoteCastEvent.builder()
             .tripId(tripId)
             .destinationId(destinationId)
-            .deviceId(deviceId)
+            .tripMemberId(deviceId)
             .voteMode("APPROVAL")
             .voteValue("YES")
             .occurredAt(occurredAt)
@@ -61,7 +61,7 @@ class DestinationVoteStompListenerTest {
     assertThat(sent.type()).isEqualTo("DESTINATION_VOTE_CAST");
     assertThat(sent.tripId()).isEqualTo(tripId);
     assertThat(sent.destinationId()).isEqualTo(destinationId);
-    assertThat(sent.deviceId()).isEqualTo(deviceId);
+    assertThat(sent.tripMemberId()).isEqualTo(deviceId);
     assertThat(sent.voteMode()).isEqualTo("APPROVAL");
     assertThat(sent.voteValue()).isEqualTo("YES");
     assertThat(sent.occurredAt()).isEqualTo(occurredAt);
@@ -74,7 +74,7 @@ class DestinationVoteStompListenerTest {
         VoteCastEvent.builder()
             .tripId(null)
             .destinationId(UUID.randomUUID().toString())
-            .deviceId(UUID.randomUUID().toString())
+            .tripMemberId(UUID.randomUUID().toString())
             .voteMode("SIMPLE")
             .voteValue("YES")
             .occurredAt(Instant.now())
@@ -93,7 +93,7 @@ class DestinationVoteStompListenerTest {
         VoteCastEvent.builder()
             .tripId(tripId)
             .destinationId(UUID.randomUUID().toString())
-            .deviceId(UUID.randomUUID().toString())
+            .tripMemberId(UUID.randomUUID().toString())
             .voteMode("RANKING")
             .voteValue("1")
             .occurredAt(null)

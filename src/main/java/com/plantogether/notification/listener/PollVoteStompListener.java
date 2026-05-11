@@ -33,7 +33,6 @@ public class PollVoteStompListener {
             MESSAGE_TYPE,
             event.getPollId(),
             event.getSlotId(),
-            event.getDeviceId(),
             event.getTripMemberId(),
             event.getStatus(),
             event.getNewSlotScore(),
@@ -45,8 +44,6 @@ public class PollVoteStompListener {
       String type,
       String pollId,
       String slotId,
-      // Legacy field — will be removed in Phase 3.
-      String deviceId,
       String tripMemberId,
       String status,
       int newSlotScore,
